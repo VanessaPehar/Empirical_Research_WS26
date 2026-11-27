@@ -1,7 +1,7 @@
 ---
 title: "Tutorial 1 · Reproducible Research Workflow"
 subtitle: "Empirical Research in Accounting, Auditing and Capital Markets · WS 2026/27"
-author: "Jan Seitz"
+author: "Vanessa Pehar"
 date: "22 October 2026"
 output:
   html_document:
@@ -20,7 +20,7 @@ This R Markdown belongs to the slides of **Tutorial 1**.
 Whenever a slide shows the blue **▶ IN RSTUDIO** bar, switch to this document and work on the part and chunk named there.
 
 | Part | Topic | Slides block |
-|------------------------|------------------------|------------------------|
+|----|----|----|
 | 1 | RStudio Projects and R Markdown | III |
 | 2 | Git and GitHub setup | IV |
 | 3 | R as a calculator, objects, data types | V |
@@ -59,7 +59,6 @@ getwd()
 
 ```{r chunk_1_2}
 ## Install once (Console!): install.packages("here")
-
 library(here)
 
 ## The project root
@@ -113,8 +112,8 @@ Then check *Tools → Global Options → Git/SVN* and restart RStudio.
 
 ```{r chunk_2_2, eval=FALSE}
 ## Use the e-mail address of your GitHub account
-usethis::use_git_config(user.name  = "Jan Seitz",
-                        user.email = "jan.seitz@lmu.de")
+usethis::use_git_config(user.name  = "VanessaPehar",
+                        user.email = "V.Pehar@campus.lmu.de")
 ```
 
 ### Chunk 2.3 · Give RStudio a key to GitHub (personal access token)
@@ -190,7 +189,7 @@ R is **case-sensitive**.
 sqrt(log(10))
 ## Assign values to objects (no output)
 x <- 5
-X <- 6
+x <- 6
 
 x
 x^2
@@ -198,8 +197,7 @@ y <- 3
 
 (z <- y^x)
 
-## Fun with floating point: Euler's identity 
-## e^(i*pi) + 1 = 0
+## Fun with floating point: Euler's identity e^(i*pi) + 1 = 0
 
 i <- complex(real = 0, imaginary = 1)
 exp(pi * i) +1
@@ -290,7 +288,7 @@ Because you know these data, you will notice immediately when your code produces
 And this is what we know about the cities:
 
 | City | Country | Inhabitants (approx.) | At the sea? | Party drink | Alcohol-free |
-|------------|------------|-----------:|------------|------------|------------|
+|----|----|---:|----|----|----|
 | Munich | Germany | 1,510,000 | no | Helles beer | Spezi |
 | Espoo | Finland | 320,000 | yes | Lonkero | Jaffa |
 | Stockholm | Sweden | 990,000 | yes | Akvavit | Julmust |
@@ -321,9 +319,9 @@ A vector has **exactly one data type**.
 
 ```{r chunk_4_1}
 
-cities <- c("Munich", "Espoo", "Stockholm","Mannheim","Joensuu","Vienna","Shanghai")
+cities <- c("Munich", "Espo", "Stockholm", "Mannheim", "Joensuu", "Vienna", "Shanghai")
 
-inhabitants <- c(1510000,320000,990000,315000,78000,2000000,24900000)
+inhabitants <- c(1510000, 320000, 990000, 315000, 78000, 2000000, 24900000)
 
 
 
@@ -350,8 +348,6 @@ inhabitants/1e6
 
 ```
 
-\
-
 ### Chunk 4.2 · Indexing
 
 ```{r chunk_4_2}
@@ -359,7 +355,7 @@ inhabitants/1e6
 inhabitants[2] # by position
 inhabitants[2:4]
 inhabitants["Vienna"]
-inhabitants[c("Munich","Shanghai")]
+inhabitants[c("Munich", "Shanghai")]
 inhabitants[-1]
 inhabitants[inhabitants < 500000]
 
@@ -369,13 +365,18 @@ inhabitants[inhabitants < 500000]
 How many are they?
 
 ```{r task_A1}
-
+inhabitants[inhabitants > 1000000]
+sum(inhabitants > 1000000)
 
 ```
 
 **Task A2 (verification):** Look up the population of *one* city in an official source (e.g., the statistical office of the country).
 Is our rounded number close enough?
 What exactly is counted — city proper or metropolitan area?
+
+According to the City of Vienna, Vienna had 2,040,914 inhabitants on January 1, 2026.
+Our rounded estimate of 2,000,000 is therefore reasonably close.
+The official figure refers to the city proper, not the metropolitan area.
 
 ## Factors
 
@@ -518,7 +519,7 @@ Our data: **Compustat North America**, all public U.S. and Canadian firms, fisca
 Licensed data: it stays in `data/`, it is not pushed to GitHub, and it is not pasted into public AI tools.
 
 | File | Separator | Decimal | Function |
-|------------------|------------------|------------------|------------------|
+|----|----|----|----|
 | `compustat.csv` | `,` | `.` | `read_csv()` (readr) or `read.csv()` (base R) |
 | `compustat_German_format.csv` | `;` | `,` | `read_csv2()` or `read.csv2()` |
 
