@@ -20,7 +20,7 @@ This R Markdown belongs to the slides of **Tutorial 1**.
 Whenever a slide shows the blue **▶ IN RSTUDIO** bar, switch to this document and work on the part and chunk named there.
 
 | Part | Topic | Slides block |
-|----|----|----|
+|------------------------|------------------------|------------------------|
 | 1 | RStudio Projects and R Markdown | III |
 | 2 | Git and GitHub setup | IV |
 | 3 | R as a calculator, objects, data types | V |
@@ -288,7 +288,7 @@ Because you know these data, you will notice immediately when your code produces
 And this is what we know about the cities:
 
 | City | Country | Inhabitants (approx.) | At the sea? | Party drink | Alcohol-free |
-|----|----|---:|----|----|----|
+|------------|------------|-----------:|------------|------------|------------|
 | Munich | Germany | 1,510,000 | no | Helles beer | Spezi |
 | Espoo | Finland | 320,000 | yes | Lonkero | Jaffa |
 | Stockholm | Sweden | 990,000 | yes | Akvavit | Julmust |
@@ -461,7 +461,19 @@ Useful functions: `data.frame()`, `head()`, `str()`, `nrow()`, `ncol()`, `summar
 
 ```{r chunk_4_6}
 ## One row per city
-
+df_cities <- data.frame(
+  city = cities,
+  country = country,
+  inhabitants = inhabitants,
+  sea = c(FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE),
+  drink = unname(party$drinks),
+  row.names = NULL
+)
+df_cities
+str(df_cities)
+sum(df_cities$inhabitants)
+subset(df_cities, inhabitants < 1e6)
+subset(df_cities, sea)
 
 ```
 
@@ -480,8 +492,9 @@ students <- data.frame(
 
 ```{r chunk_4_6b}
 ## Explore the students data
-
-
+head(students)
+nrow(students)
+table(students$city)
 ```
 
 **Task C · Party planning:** Every student brings the drink of their (home) city.
@@ -490,9 +503,10 @@ Check your result against what you know about the class.
 
 ```{r task_C}
 ## Look up each student's drink in df_cities (a first "merge" — more in Tutorial 2)
+students$drink <- df_cities$drink[match(students$city, df_cities$city)]
+students[,c("student_id","city","drink")]
 ## Check with what we know: 8 LMU students -> should be 8 x Helles beer
 ## Alternative with the same answer (independent implementation)
-
 
 ```
 
@@ -511,7 +525,8 @@ The **tidyverse** is a collection of packages for data analysis: `readr` (import
 
 ```{r chunk_5_1}
 ## install.packages("tidyverse")   # once per laptop, in the Console
-
+library(tidyverse)
+library(here)
 
 ```
 
@@ -519,25 +534,39 @@ Our data: **Compustat North America**, all public U.S. and Canadian firms, fisca
 Licensed data: it stays in `data/`, it is not pushed to GitHub, and it is not pasted into public AI tools.
 
 | File | Separator | Decimal | Function |
-|----|----|----|----|
+|------------------|------------------|------------------|------------------|
 | `compustat.csv` | `,` | `.` | `read_csv()` (readr) or `read.csv()` (base R) |
 | `compustat_German_format.csv` | `;` | `,` | `read_csv2()` or `read.csv2()` |
 
 ### Chunk 5.2 · Import the same data three ways
 
 ```{r chunk_5_2}
+cs <- read_csv(here("data", "compustat.csv"))
+cs_b <- read.csv(here("data", "compustat.csv"))
+cs_g <- read_csv2(here("data", "compustat_German_format.csv"))
 
-
+dim(cs)
 ```
 
 ### Chunk 5.3 · Same file, same data? Compare!
 
 ```{r chunk_5_3}
 ## 1. The identifier gvkey
+head(cs$gvkey, 3)
+head(cs_b$gvkey,3)
+head(cs_g$gvkey,3)
+class(cs$gvkey); class(cs_b$gvkey); class(cs_g$gvkey)
 ## 2. Type guessing: readr guesses column types from the first 1,000 rows
+problems(cs)
+unique(problems(cs)$col)
+names(cs)[unique(problems(cs)$col)]
 ## 3. A safer import: tell R the types instead of letting it guess
+cs <- read_csv(here("data", "compustat.csv"),
+               col_types = cols(gvkey = col_character()),
+               guess_max = Inf)
+nrow(problems(cs))
 ## 4. Do the numbers agree across the imports?
-
+all.equal(sum(cs$at, na.rm =TRUE), sum(cs_g$at, na.rm=TRUE))
 
 ```
 
@@ -548,11 +577,23 @@ Why?
 
 ```{r chunk_5_4}
 ## 1. Size
+dim(cs)
 ## 2. Types
+print(cs)
 ## 3. Keys: one row per firm-year?
-## 4. Ranges and missing values
-## 5. Known value: Apple's total assets, fiscal year 2014 (in USD millions)
+nrow(cs)
+n_distinct(cs$gvkey, cs$fyear)
+cs |> count(gvkey, fyear) |> filter(n > 1) |> head()
+table(cs$indfmt) #INDL = industrial, FS = financial service format
 
+## 4. Ranges and missing values
+
+summary(cs$at)
+summary(cs$fyear)
+table(cs$curcd)
+
+## 5. Known value: Apple's total assets, fiscal year 2014 (in USD millions)
+cs |> filter(tic == "AAPL", fyear == 2014) |> select(conm, fyear, at, sale, ni)
 
 ```
 
@@ -574,7 +615,11 @@ What do you see — and why?
 
 ```{r chunk_5_5}
 ## Export: always to output/, never overwrite raw data in data/
+dir.create(here("output"), showWarnings = FALSE)
+write_csv(df_cities, here("output", "student_cities.csv"))
 ## Remove objects we no longer need
+rm(cs_b, cs_g)
+
 ## Remove everything (same as the broom icon in the Environment pane)
 ## rm(list = ls())
 
@@ -603,29 +648,36 @@ What does that mean for how you use AI?
 ## ---- AI-generated script: summary of student cities and Compustat ----
 
 ## (a) Number of students per city, added to the city table
+# BUG: Student counts are matched by position instead of city name. Adding two zeros at the end does not correctly identify cities without students.
 n_per_city <- table(students$city)
 city_info <- df_cities
 city_info$n_students <- c(as.numeric(n_per_city), 0, 0)
 city_info[, c("city", "n_students")]
 
 ## (b) Population in millions
+# BUG: 1e5 is 100,000, not one million.
 city_info$inhabitants_m <- city_info$inhabitants / 1e5
 city_info[, c("city", "inhabitants_m")]
 
 ## (c) German cities only
+# BUG: Use == instead of = to compare values.
 german <- subset(city_info, country = "Germany")
 nrow(german)
 
 ## (d) Average sales of Compustat firms
+# BUG: Sales are reported in millions, not thousands. Different reporting currencies (USD and CAD) are mixed.
 avg_sales <- mean(cs$sale, na.rm = TRUE)
 cat("Average sales in thousand USD:", round(avg_sales), "\n")
 
 ## (e) Number of firms in the sample
+# BUG: nrow() counts observations, not unique firms.
 n_firms <- nrow(cs)
 cat("Number of firms:", n_firms, "\n")
 
 ## (f) Median total assets by fiscal year
+# BUG: summarise_median() does not exist.
 summarise_median(cs, at, by = fyear)
+
 ```
 
 ### Chunk 6.2 · Solution: bugs, fixes and checks
@@ -635,12 +687,26 @@ After every fix, check the result against something you know (e.g., Munich has 8
 
 ```{r chunk_6_2}
 ## (a) match by name, not by position — and check with known values
+city_info$n_students <- as.numeric(n_per_city[city_info$city])
+city_info$n_students[is.na(city_info$n_students)] <- 0
+city_info[, c("city", "n_students")]
 ## (b) millions — check: Munich must be about 1.5
+city_info$inhabitants_m <- city_info$inhabitants / 1e6
+city_info[, c("city", "inhabitants_m")]
 ## (c) comparison with == ; check: we know there are exactly two German cities
+german <- subset(city_info, country == "Germany")
+nrow(german)
 ## (d) units and currency: Compustat items are in millions of the reporting currency
+cs |> 
+  group_by(curcd) |> 
+  summarise(n = n(), avg_sales_millions = mean(sale, na.rm = TRUE))
 ## (e) firms vs. firm-years
+n_firms <- n_distinct(cs$gvkey)
+n_firms
 ## (f) an existing function — and an independent implementation as check
-
+cs |>
+  group_by(fyear) |>
+  summarise(median_assets = median(at, na.rm = TRUE))
 
 ```
 
